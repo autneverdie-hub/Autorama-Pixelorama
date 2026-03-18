@@ -673,7 +673,7 @@ class ProjectAPI:
 	## [param frames] is an [Array] of type [Frame]. Usually it can be left as [code][][/code].
 	## If [param is_resource] is [code]true[/code] then a [ResourceProject] is created.
 	func new_project(
-		frames: Array[Frame] = [],
+		frames := [],
 		name := tr("untitled"),
 		size := Vector2(64, 64),
 		fill_color := Color.TRANSPARENT,
@@ -685,10 +685,11 @@ class ProjectAPI:
 			size.x = 1
 			size.y = 1
 		var new_proj: Project
+		var typed_frames: Array[Frame] = []
 		if is_resource:
-			new_proj = ResourceProject.new(frames, name, size.floor())
+			new_proj = ResourceProject.new(typed_frames, name, size.floor())
 		else:
-			new_proj = Project.new(frames, name, size.floor())
+			new_proj = Project.new(typed_frames, name, size.floor())
 		new_proj.layers.append(PixelLayer.new(new_proj))
 		new_proj.fill_color = fill_color
 		new_proj.frames.append(new_proj.new_empty_frame())
