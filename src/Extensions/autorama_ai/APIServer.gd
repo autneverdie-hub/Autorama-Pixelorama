@@ -16,23 +16,14 @@ func setup(executor) -> void:
 
 
 func start() -> bool:
+	process_mode = PROCESS_MODE_ALWAYS  # Run even when game is paused
+	set_process(true)
 	var err := _server.listen(PORT)
 	if err != OK:
 		push_error("[APIServer] Failed to listen on port %d (err %d)" % [PORT, err])
 		return false
-	set_process(true)
-	# Fallback timer in case _process is throttled
-	var timer := Timer.new()
-	timer.wait_time = 0.05
-	timer.autostart = true
-	timer.timeout.connect(_tick)
-	add_child(timer)
 	print("[APIServer] Listening on http://127.0.0.1:%d" % PORT)
 	return true
-
-
-func _tick() -> void:
-	_process(0.0)
 
 
 func stop() -> void:
