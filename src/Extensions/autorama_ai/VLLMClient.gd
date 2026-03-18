@@ -1,8 +1,8 @@
 class_name VLLMClient
 extends RefCounted
 
-const DEFAULT_HOST := "http://192.168.1.249:8000"
-const DEFAULT_MODEL := "Qwen/Qwen3.5-35B-A3B-GPTQ-Int4"
+const DEFAULT_HOST := "http://127.0.0.1:11434"
+const DEFAULT_MODEL := "qwen3.5:397b-cloud"
 const ENDPOINT := "/v1/chat/completions"
 
 var host: String
@@ -67,8 +67,7 @@ func chat(messages: Array, on_tool_calls: Callable, on_text: Callable) -> void:
 		"messages": messages,
 		"tools": get_tool_definitions(),
 		"tool_choice": "auto",
-		"max_tokens": 2048,
-		"chat_template_kwargs": {"enable_thinking": false}
+		"max_tokens": 2048
 	})
 	print("[Autorama] Sending request, messages count: ", messages.size())
 	var headers := ["Content-Type: application/json"]
