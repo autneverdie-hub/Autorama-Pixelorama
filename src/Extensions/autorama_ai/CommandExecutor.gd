@@ -168,26 +168,79 @@ func _comfy_request(method: HTTPClient.Method, path: String, body: String = "") 
 	return {"ok": true, "raw": raw, "data": null}
 
 
+func _upload_to_comfy(png_bytes: PackedByteArray, filename: String) -> Dictionary:
+	var boundary := "AutoramaBoundary7777"
+	var body := PackedByteArray()
+	var hdr := "--%s\r\nContent-Disposition: form-data; name=\"image\"; filename=\"%s\"\r\nContent-Type: image/png\r\n\r\n" % [boundary, filename]
+	body.append_array(hdr.to_utf8_buffer())
+	body.append_array(png_bytes)
+	body.append_array(("\r\n--%s--\r\n" % boundary).to_utf8_buffer())
+	var http := HTTPClient.new()
+	if http.connect_to_host(COMFY_HOST, COMFY_PORT) != OK:
+		return {"ok": false, "data": "Cannot connect"}
+	var t := 0
+	while http.get_status() in [HTTPClient.STATUS_CONNECTING, HTTPClient.STATUS_RESOLVING]:
+		http.poll(); OS.delay_msec(10); t += 10
+		if t > 5000: return {"ok": false, "data": "Upload connect timeout"}
+	var headers := ["Content-Type: multipart/form-data; boundary=%s" % boundary, "Content-Length: %d" % body.size()]
+	http.request_raw(HTTPClient.METHOD_POST, "/upload/image", headers, body)
+	t = 0
+	while http.get_status() == HTTPClient.STATUS_REQUESTING:
+		http.poll(); OS.delay_msec(10); t += 10
+		if t > 10000: return {"ok": false, "data": "Upload timeout"}
+	var raw := PackedByteArray()
+	while http.get_status() == HTTPClient.STATUS_BODY:
+		http.poll()
+		var chunk := http.read_response_body_chunk()
+		if chunk.size() > 0: raw.append_array(chunk)
+	var json := JSON.new()
+	if json.parse(raw.get_string_from_utf8()) != OK:
+		return {"ok": false, "data": "Upload response parse error"}
+	return {"ok": true, "data": json.get_data()}
+
+
 func queue_image_generation(args: Dictionary) -> Dictionary:
 	var prompt_text: String = args.get("prompt", "pixel art sprite")
-	var width: int  = args.get("width",  512)
-	var height: int = args.get("height", 512)
-	var seed: int   = args.get("seed",   randi())
-	var workflow := {
-		"1":  {"class_type": "UNETLoader",           "inputs": {"unet_name": "flux-2-klein-9b-kv-fp8.safetensors", "weight_dtype": "fp8_e4m3fn"}},
-		"2":  {"class_type": "CLIPLoader",            "inputs": {"clip_name": "qwen_3_8b_fp8mixed.safetensors", "type": "flux2"}},
-		"3":  {"class_type": "VAELoader",             "inputs": {"vae_name": "flux2-vae.safetensors"}},
-		"4":  {"class_type": "CLIPTextEncode",        "inputs": {"clip": ["2", 0], "text": prompt_text}},
-		"5":  {"class_type": "EmptySD3LatentImage",   "inputs": {"width": width, "height": height, "batch_size": 1}},
-		"6":  {"class_type": "FluxGuidance",          "inputs": {"conditioning": ["4", 0], "guidance": 3.5}},
-		"7":  {"class_type": "BasicGuider",           "inputs": {"model": ["1", 0], "conditioning": ["6", 0]}},
-		"8":  {"class_type": "RandomNoise",           "inputs": {"noise_seed": seed}},
-		"9":  {"class_type": "KSamplerSelect",        "inputs": {"sampler_name": "euler"}},
-		"10": {"class_type": "BasicScheduler",        "inputs": {"model": ["1", 0], "scheduler": "simple", "steps": 25, "denoise": 1.0}},
-		"11": {"class_type": "SamplerCustomAdvanced", "inputs": {"noise": ["8", 0], "guider": ["7", 0], "sampler": ["9", 0], "sigmas": ["10", 0], "latent_image": ["5", 0]}},
-		"12": {"class_type": "VAEDecode",             "inputs": {"samples": ["11", 0], "vae": ["3", 0]}},
-		"13": {"class_type": "SaveImage",             "inputs": {"images": ["12", 0], "filename_prefix": "autorama_gen"}}
-	}
+	var width: int    = args.get("width",  512)
+	var height: int   = args.get("height", 512)
+	var seed: int     = args.get("seed",   randi())
+	var ref_name: String = args.get("reference_image", "")
+	var denoise: float = args.get("denoise", 1.0)
+	var workflow: Dictionary
+	if ref_name.is_empty():
+		workflow = {
+			"1":  {"class_type": "UNETLoader",           "inputs": {"unet_name": "flux-2-klein-9b-kv-fp8.safetensors", "weight_dtype": "fp8_e4m3fn"}},
+			"2":  {"class_type": "CLIPLoader",            "inputs": {"clip_name": "qwen_3_8b_fp8mixed.safetensors", "type": "flux2"}},
+			"3":  {"class_type": "VAELoader",             "inputs": {"vae_name": "flux2-vae.safetensors"}},
+			"4":  {"class_type": "CLIPTextEncode",        "inputs": {"clip": ["2", 0], "text": prompt_text}},
+			"5":  {"class_type": "EmptySD3LatentImage",   "inputs": {"width": width, "height": height, "batch_size": 1}},
+			"6":  {"class_type": "FluxGuidance",          "inputs": {"conditioning": ["4", 0], "guidance": 3.5}},
+			"7":  {"class_type": "BasicGuider",           "inputs": {"model": ["1", 0], "conditioning": ["6", 0]}},
+			"8":  {"class_type": "RandomNoise",           "inputs": {"noise_seed": seed}},
+			"9":  {"class_type": "KSamplerSelect",        "inputs": {"sampler_name": "euler"}},
+			"10": {"class_type": "BasicScheduler",        "inputs": {"model": ["1", 0], "scheduler": "simple", "steps": 25, "denoise": 1.0}},
+			"11": {"class_type": "SamplerCustomAdvanced", "inputs": {"noise": ["8", 0], "guider": ["7", 0], "sampler": ["9", 0], "sigmas": ["10", 0], "latent_image": ["5", 0]}},
+			"12": {"class_type": "VAEDecode",             "inputs": {"samples": ["11", 0], "vae": ["3", 0]}},
+			"13": {"class_type": "SaveImage",             "inputs": {"images": ["12", 0], "filename_prefix": "autorama_gen"}}
+		}
+	else:
+		# img2img workflow — use reference image to keep character consistent
+		workflow = {
+			"1":  {"class_type": "UNETLoader",           "inputs": {"unet_name": "flux-2-klein-9b-kv-fp8.safetensors", "weight_dtype": "fp8_e4m3fn"}},
+			"2":  {"class_type": "CLIPLoader",            "inputs": {"clip_name": "qwen_3_8b_fp8mixed.safetensors", "type": "flux2"}},
+			"3":  {"class_type": "VAELoader",             "inputs": {"vae_name": "flux2-vae.safetensors"}},
+			"4":  {"class_type": "CLIPTextEncode",        "inputs": {"clip": ["2", 0], "text": prompt_text}},
+			"5":  {"class_type": "LoadImage",             "inputs": {"image": ref_name}},
+			"6":  {"class_type": "VAEEncode",             "inputs": {"pixels": ["5", 0], "vae": ["3", 0]}},
+			"7":  {"class_type": "FluxGuidance",          "inputs": {"conditioning": ["4", 0], "guidance": 3.5}},
+			"8":  {"class_type": "BasicGuider",           "inputs": {"model": ["1", 0], "conditioning": ["7", 0]}},
+			"9":  {"class_type": "RandomNoise",           "inputs": {"noise_seed": seed}},
+			"10": {"class_type": "KSamplerSelect",        "inputs": {"sampler_name": "euler"}},
+			"11": {"class_type": "BasicScheduler",        "inputs": {"model": ["1", 0], "scheduler": "simple", "steps": 25, "denoise": denoise}},
+			"12": {"class_type": "SamplerCustomAdvanced", "inputs": {"noise": ["9", 0], "guider": ["8", 0], "sampler": ["10", 0], "sigmas": ["11", 0], "latent_image": ["6", 0]}},
+			"13": {"class_type": "VAEDecode",             "inputs": {"samples": ["12", 0], "vae": ["3", 0]}},
+			"14": {"class_type": "SaveImage",             "inputs": {"images": ["13", 0], "filename_prefix": "autorama_gen"}}
+		}
 	var res := _comfy_request(HTTPClient.METHOD_POST, "/prompt", JSON.stringify({"prompt": workflow}))
 	if not res["ok"]: return res
 	var json := JSON.new()
@@ -250,6 +303,90 @@ func import_image(args: Dictionary) -> Dictionary:
 	return {"ok": true, "data": {"imported": filename, "size": "%dx%d" % [cw, ch]}}
 
 
+func generate_animation(args: Dictionary) -> Dictionary:
+	var character: String = args.get("character", "pixel art warrior character")
+	var anim_type: String = args.get("animation_type", "idle")
+	var frame_count: int  = args.get("frames", 4)
+	var frame_w: int      = args.get("width",  512)
+	var frame_h: int      = args.get("height", 512)
+	var seed: int         = args.get("seed", randi())
+	var pose_map: Dictionary = {
+		"idle":   "4 poses side by side: neutral idle, weight left, weight right, back to idle",
+		"walk":   "4 walk cycle frames side by side: left foot forward, mid stride, right foot forward, mid return",
+		"attack": "4 attack frames side by side: ready stance, wind-up high, strike extension, recovery",
+		"run":    "4 run cycle frames side by side: push off, airborne, land left, land right",
+		"hurt":   "4 hurt frames side by side: normal, flinch, stagger, recover",
+		"death":  "4 death frames side by side: normal, stumble, fall to knees, collapsed",
+	}
+	var poses_desc: String = pose_map.get(anim_type, pose_map["idle"])
+	# Generate one wide sprite sheet — all frames in 1 image = guaranteed consistency
+	var sheet_w: int = frame_w * frame_count
+	var sheet_prompt := "%s, sprite sheet animation %s, white background, same consistent character all frames, pixel art game asset, no borders between frames" % [character, poses_desc]
+	var q := queue_image_generation({"prompt": sheet_prompt, "width": sheet_w, "height": frame_h, "seed": seed})
+	if not q["ok"]: return q
+	var prompt_id: String = q["data"]["prompt_id"]
+	# Poll
+	var sheet_filename := ""
+	for _i in range(180):
+		OS.delay_msec(1000)
+		var s := check_image_status({"prompt_id": prompt_id})
+		if not s["ok"]: return s
+		var st = s["data"]
+		if st is Dictionary and st.get("status") == "done":
+			sheet_filename = st.get("filename", "")
+			break
+	if sheet_filename.is_empty():
+		return {"ok": false, "data": "Generation timed out"}
+	# Download sheet
+	var dl := _comfy_request(HTTPClient.METHOD_GET, "/view?filename=%s&type=output" % sheet_filename)
+	if not dl["ok"]: return dl
+	var tmp_sheet := "/tmp/autorama_sheet_%s" % sheet_filename
+	var f := FileAccess.open(tmp_sheet, FileAccess.WRITE)
+	if not f: return {"ok": false, "data": "Cannot write temp sheet"}
+	f.store_buffer(dl["raw"]); f.close()
+	var sheet_img := Image.new()
+	if sheet_img.load(tmp_sheet) != OK:
+		return {"ok": false, "data": "Cannot load sprite sheet"}
+	# Slice into frames
+	var project = _api.general.get_global().current_project
+	if not project: return {"ok": false, "data": "No project"}
+	for i in range(frame_count):
+		if i > 0:
+			var af := add_frame({"after_frame": i - 1})
+			if not af["ok"]: return {"ok": false, "data": "add_frame failed"}
+		var region := sheet_img.get_region(Rect2i(i * frame_w, 0, frame_w, frame_h))
+		if region.get_width() != project.size.x or region.get_height() != project.size.y:
+			region.resize(project.size.x, project.size.y, Image.INTERPOLATE_NEAREST)
+		var fi := clampi(i, 0, project.frames.size() - 1)
+		_api.project.set_pixelcel_image(region, fi, 0)
+	return {"ok": true, "data": {"frames": frame_count, "animation_type": anim_type, "method": "sprite_sheet"}}
+
+
+func generate_and_import(args: Dictionary) -> Dictionary:
+	var prompt_text: String = args.get("prompt", "pixel art sprite")
+	var width: int  = args.get("width",  512)
+	var height: int = args.get("height", 512)
+	var seed: int   = args.get("seed", randi())
+	# Step 1: Queue
+	var q := queue_image_generation({"prompt": prompt_text, "width": width, "height": height, "seed": seed})
+	if not q["ok"]: return q
+	var prompt_id: String = q["data"]["prompt_id"]
+	# Step 2: Poll until done (max 120s)
+	var filename := ""
+	for _i in range(120):
+		OS.delay_msec(1000)
+		var s := check_image_status({"prompt_id": prompt_id})
+		if not s["ok"]: return s
+		var st = s["data"]
+		if st is Dictionary and st.get("status") == "done":
+			filename = st.get("filename", "")
+			break
+	if filename.is_empty():
+		return {"ok": false, "data": "Generation timed out after 120s"}
+	# Step 3: Import
+	return import_image({"filename": filename, "frame": args.get("frame", 0), "layer": args.get("layer", 0)})
+
+
 func execute(tool_name: String, args: Dictionary) -> Dictionary:
 	match tool_name:
 		"create_canvas":           return create_canvas(args)
@@ -261,6 +398,8 @@ func execute(tool_name: String, args: Dictionary) -> Dictionary:
 		"fill_area":               return fill_area(args)
 		"get_pixels":              return get_pixels(args)
 		"export_sprite":           return export_sprite(args)
+		"generate_animation":      return generate_animation(args)
+		"generate_and_import":     return generate_and_import(args)
 		"queue_image_generation":  return queue_image_generation(args)
 		"check_image_status":      return check_image_status(args)
 		"import_image":            return import_image(args)

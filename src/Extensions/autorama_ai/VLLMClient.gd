@@ -58,6 +58,21 @@ func get_tool_definitions() -> Array:
 		_tool("export_sprite", "export sprite เป็น PNG", {
 			"path": {"type": "string"}
 		}, ["path"]),
+		_tool("generate_animation", "⭐⭐ สร้าง animation หลาย frames ด้วย FLUX AI — ตัวละคร consistent ทุก frame", {
+			"character": {"type": "string",  "description": "คำอธิบายตัวละคร เช่น pixel art armored warrior"},
+			"animation_type": {"type": "string", "description": "idle | walk | attack | run | hurt | death"},
+			"frames":    {"type": "integer", "description": "จำนวน frames 2-4"},
+			"width":     {"type": "integer", "description": "ความกว้าง px default 512"},
+			"height":    {"type": "integer", "description": "ความสูง px default 512"},
+			"seed":      {"type": "integer", "description": "seed สำหรับ consistency ถ้าไม่ระบุจะสุ่ม"}
+		}, ["character", "animation_type"]),
+		_tool("generate_and_import", "⭐ สร้างรูปด้วย FLUX AI แล้ว import เข้า canvas เลย — ใช้สำหรับ characters, scenes, complex art ทุกอย่าง", {
+			"prompt": {"type": "string", "description": "คำอธิบายรูปภาษาอังกฤษ เช่น pixel art RPG warrior character"},
+			"width":  {"type": "integer", "description": "ความกว้าง px default 512"},
+			"height": {"type": "integer", "description": "ความสูง px default 512"},
+			"frame":  {"type": "integer", "description": "frame index default 0"},
+			"layer":  {"type": "integer", "description": "layer index default 0"}
+		}, ["prompt"]),
 		_tool("queue_image_generation", "สร้างรูปด้วย AI (FLUX) จาก text prompt ส่งงานไป ComfyUI", {
 			"prompt": {"type": "string", "description": "คำอธิบายรูปที่ต้องการ เช่น pixel art warrior"},
 			"width":  {"type": "integer", "description": "ความกว้าง default 512"},
@@ -81,7 +96,8 @@ func chat(messages: Array, on_tool_calls: Callable, on_text: Callable) -> void:
 		"messages": messages,
 		"tools": get_tool_definitions(),
 		"tool_choice": "auto",
-		"max_tokens": 2048
+		"max_tokens": 4096,
+		"think": false
 	})
 	print("[Autorama] Sending request, messages count: ", messages.size())
 	var headers := ["Content-Type: application/json"]
