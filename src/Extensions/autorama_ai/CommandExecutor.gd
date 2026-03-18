@@ -75,7 +75,7 @@ func draw_pixels(args: Dictionary) -> Dictionary:
 	var img: Image = cel.get_image()
 	for px in pixels:
 		if px.size() >= 3:
-			img.set_pixel(px[0], px[1], Color(px[2]))
+			img.set_pixel(int(px[0]), int(px[1]), Color.html(str(px[2])))
 	_api.general.get_global().canvas.update_texture(layer_idx, frame_idx, project)
 	return {"ok": true, "data": {"pixels_drawn": pixels.size()}}
 
