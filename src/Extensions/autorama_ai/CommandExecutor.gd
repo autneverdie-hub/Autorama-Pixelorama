@@ -21,8 +21,16 @@ func get_project_info(args: Dictionary) -> Dictionary:
 	var project = _api.general.get_global().current_project
 	if not project:
 		return {"ok": false, "data": "No project open"}
-	var info: Dictionary = _api.project.get_project_info(project)
-	return {"ok": true, "data": info}
+	var layer_names := []
+	for l in project.layers:
+		layer_names.append(l.name)
+	return {"ok": true, "data": {
+		"width": project.size.x,
+		"height": project.size.y,
+		"frames": project.frames.size(),
+		"layers": project.layers.size(),
+		"layer_names": layer_names
+	}}
 
 
 func add_layer(args: Dictionary) -> Dictionary:
@@ -122,11 +130,13 @@ func export_sprite(args: Dictionary) -> Dictionary:
 	var project = _api.general.get_global().current_project
 	if not project:
 		return {"ok": false, "data": "No project open"}
-	var export_node = _api.export.autoload()
-	export_node.export_overwrite = true
-	export_node.file_name = path.get_file().get_basename()
-	export_node.directory_path = path.get_base_dir()
-	export_node.export_sprite_sheet(project)
+	var cel = _api.project.get_cel_at(project, 0, 0)
+	if not cel:
+		return {"ok": false, "data": "No cel to export"}
+	var img: Image = cel.get_image()
+	var err = img.save_png(path)
+	if err != OK:
+		return {"ok": false, "data": "Failed to save PNG: %s" % path}
 	return {"ok": true, "data": {"path": path}}
 
 
