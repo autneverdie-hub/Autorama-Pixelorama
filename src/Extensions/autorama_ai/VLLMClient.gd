@@ -58,6 +58,20 @@ func get_tool_definitions() -> Array:
 		_tool("export_sprite", "export sprite เป็น PNG", {
 			"path": {"type": "string"}
 		}, ["path"]),
+		_tool("queue_image_generation", "สร้างรูปด้วย AI (FLUX) จาก text prompt ส่งงานไป ComfyUI", {
+			"prompt": {"type": "string", "description": "คำอธิบายรูปที่ต้องการ เช่น pixel art warrior"},
+			"width":  {"type": "integer", "description": "ความกว้าง default 512"},
+			"height": {"type": "integer", "description": "ความสูง default 512"},
+			"seed":   {"type": "integer", "description": "random seed"}
+		}, ["prompt"]),
+		_tool("check_image_status", "เช็คสถานะการสร้างรูป AI — ถ้า done จะได้ filename กลับมา", {
+			"prompt_id": {"type": "string"}
+		}, ["prompt_id"]),
+		_tool("import_image", "โหลดรูป PNG จาก ComfyUI เข้า canvas ปัจจุบัน", {
+			"filename": {"type": "string", "description": "ชื่อไฟล์จาก check_image_status"},
+			"frame":    {"type": "integer"},
+			"layer":    {"type": "integer"}
+		}, ["filename"]),
 	]
 
 
