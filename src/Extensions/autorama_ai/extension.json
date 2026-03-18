@@ -1,0 +1,9 @@
+{
+	"name": "autorama_ai",
+	"display_name": "Autorama AI",
+	"description": "AI-powered sprite generation using local vLLM (Qwen)",
+	"author": "Autorama",
+	"version": "0.1.0",
+	"license": "MIT",
+	"nodes": ["AutoramaAI.tscn"]
+}

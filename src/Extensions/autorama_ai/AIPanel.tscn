@@ -1,0 +1,58 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/Extensions/autorama_ai/AIPanel.gd" id="1"]
+
+[node name="AIPanel" type="Control"]
+script = ExtResource("1")
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="VBox" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="TopRow" type="HBoxContainer" parent="VBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 28)
+
+[node name="Label" type="Label" parent="VBox/TopRow"]
+layout_mode = 2
+text = "vLLM:"
+
+[node name="HostInput" type="LineEdit" parent="VBox/TopRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "http://192.168.1.249:8000"
+
+[node name="ClearBtn" type="Button" parent="VBox/TopRow"]
+layout_mode = 2
+text = "Clear"
+
+[node name="ChatLog" type="RichTextLabel" parent="VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+scroll_following = true
+bbcode_enabled = true
+custom_minimum_size = Vector2(0, 200)
+
+[node name="InputRow" type="HBoxContainer" parent="VBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 32)
+
+[node name="Input" type="LineEdit" parent="VBox/InputRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "พิมพ์คำสั่ง เช่น สร้างตัวละคร 16x16..."
+
+[node name="SendBtn" type="Button" parent="VBox/InputRow"]
+layout_mode = 2
+text = "Send"
+
+[node name="Status" type="Label" parent="VBox"]
+layout_mode = 2
+text = "Ready"
+horizontal_alignment = 1
