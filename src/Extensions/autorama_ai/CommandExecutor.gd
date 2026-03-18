@@ -56,8 +56,8 @@ func draw_pixels(args: Dictionary) -> Dictionary:
 	var project = _api.general.get_global().current_project
 	if not project:
 		return {"ok": false, "data": "No project open"}
-	var frame_idx: int = args.get("frame", 0)
-	var layer_idx: int = args.get("layer", 0)
+	var frame_idx: int = clampi(args.get("frame", 0), 0, project.frames.size() - 1)
+	var layer_idx: int = clampi(args.get("layer", 0), 0, project.layers.size() - 1)
 	var pixels: Array = args.get("pixels", [])
 	var cel = _api.project.get_cel_at(project, frame_idx, layer_idx)
 	if not cel:
@@ -79,8 +79,8 @@ func fill_area(args: Dictionary) -> Dictionary:
 	var w: int = args.get("width", 1)
 	var h: int = args.get("height", 1)
 	var color_hex: String = args.get("color", "#FF0000")
-	var frame_idx: int = args.get("frame", 0)
-	var layer_idx: int = args.get("layer", 0)
+	var frame_idx: int = clampi(args.get("frame", 0), 0, project.frames.size() - 1)
+	var layer_idx: int = clampi(args.get("layer", 0), 0, project.layers.size() - 1)
 	var cel = _api.project.get_cel_at(project, frame_idx, layer_idx)
 	if not cel:
 		return {"ok": false, "data": "Invalid frame/layer"}
@@ -98,8 +98,8 @@ func get_pixels(args: Dictionary) -> Dictionary:
 	var project = _api.general.get_global().current_project
 	if not project:
 		return {"ok": false, "data": "No project open"}
-	var frame_idx: int = args.get("frame", 0)
-	var layer_idx: int = args.get("layer", 0)
+	var frame_idx: int = clampi(args.get("frame", 0), 0, project.frames.size() - 1)
+	var layer_idx: int = clampi(args.get("layer", 0), 0, project.layers.size() - 1)
 	var cel = _api.project.get_cel_at(project, frame_idx, layer_idx)
 	if not cel:
 		return {"ok": false, "data": "Invalid frame/layer"}

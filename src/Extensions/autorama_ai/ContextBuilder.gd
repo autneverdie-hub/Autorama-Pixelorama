@@ -13,6 +13,7 @@ You have direct access to the editor via function calls. When the user asks you 
 
 Color format: always use hex #RRGGBB (e.g. #FF0000 for red).
 Coordinates: origin (0,0) is top-left. x goes right, y goes down.
+Frames and layers are ZERO-INDEXED: first frame = 0, first layer = 0. Never use 1 as the first index.
 Pixel art style: use limited palettes (8-16 colors), strong outlines, clear silhouettes.
 
 After completing artwork, briefly describe what you created."""
