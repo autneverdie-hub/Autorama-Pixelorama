@@ -76,7 +76,7 @@ func draw_pixels(args: Dictionary) -> Dictionary:
 	for px in pixels:
 		if px.size() >= 3:
 			img.set_pixel(px[0], px[1], Color(px[2]))
-	_api.project.set_pixelcel_image(img, frame_idx, layer_idx)
+	_api.general.get_global().canvas.update_texture(layer_idx, frame_idx, project)
 	return {"ok": true, "data": {"pixels_drawn": pixels.size()}}
 
 
@@ -102,7 +102,7 @@ func fill_area(args: Dictionary) -> Dictionary:
 		for px in range(x, x + w):
 			if px < img.get_width() and py < img.get_height():
 				img.set_pixel(px, py, color)
-	_api.project.set_pixelcel_image(img, frame_idx, layer_idx)
+	_api.general.get_global().canvas.update_texture(layer_idx, frame_idx, project)
 	return {"ok": true, "data": {"filled": w * h, "color": color_hex}}
 
 
