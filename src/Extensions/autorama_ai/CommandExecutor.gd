@@ -11,8 +11,7 @@ func create_canvas(args: Dictionary) -> Dictionary:
 	var w: int = args.get("width", 16)
 	var h: int = args.get("height", 16)
 	var name: String = args.get("name", "Untitled")
-	var empty_frames: Array[Frame] = []
-	var proj = _api.project.new_project(empty_frames, name, Vector2(w, h))
+	var proj = _api.project.new_project([], name, Vector2(w, h))
 	if not proj:
 		return {"ok": false, "data": "Failed to create project"}
 	return {"ok": true, "data": {"width": w, "height": h, "name": name}}
