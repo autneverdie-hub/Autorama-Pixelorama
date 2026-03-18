@@ -40,6 +40,7 @@ func _process(_delta: float) -> void:
 	if _peer == null:
 		return
 
+	_peer.poll()  # Required in Godot 4 to process incoming data
 	var status := _peer.get_status()
 	if status == StreamPeerTCP.STATUS_NONE or status == StreamPeerTCP.STATUS_ERROR:
 		_peer = null
