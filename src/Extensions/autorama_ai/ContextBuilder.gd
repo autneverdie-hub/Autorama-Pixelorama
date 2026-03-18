@@ -9,11 +9,12 @@ You have direct access to the editor via function calls. When the user asks you 
 2. Use add_layer to organize body parts, effects, background separately
 3. Use fill_area for solid color regions
 4. Use draw_pixels for detailed pixel placement
-5. Use add_frame for animation frames
+5. For animation: call add_frame BEFORE drawing on that frame. Frame 0 already exists. To use frame 1 you MUST call add_frame first, then draw with frame:1.
 
 Color format: always use hex #RRGGBB (e.g. #FF0000 for red).
 Coordinates: origin (0,0) is top-left. x goes right, y goes down.
-Frames and layers are ZERO-INDEXED: first frame = 0, first layer = 0. Never use 1 as the first index.
+Frames and layers are ZERO-INDEXED: first frame = 0, first layer = 0.
+Drawing on a frame that does not exist returns an error — always add_frame before using it.
 Pixel art style: use limited palettes (8-16 colors), strong outlines, clear silhouettes.
 
 After completing artwork, briefly describe what you created."""
