@@ -11,6 +11,7 @@ var _history: Array = []
 @onready var _status: Label = $VBox/Status
 @onready var _clear_btn: Button = $VBox/TopRow/ClearBtn
 @onready var _host_input: LineEdit = $VBox/TopRow/HostInput
+@onready var _model_input: LineEdit = $VBox/TopRow/ModelInput
 
 
 func _ready() -> void:
@@ -24,8 +25,10 @@ func _ready() -> void:
 	_input.text_submitted.connect(func(_t): _on_send())
 	_clear_btn.pressed.connect(_clear_history)
 	_host_input.text_changed.connect(func(t): _client.host = t)
+	_model_input.text_changed.connect(func(t): _client.model = t)
 
 	_host_input.text = VLLMClient.DEFAULT_HOST
+	_model_input.text = VLLMClient.DEFAULT_MODEL
 	_set_status("Ready")
 	_append_log("system", "Autorama AI ready. Describe what you want to create!")
 
